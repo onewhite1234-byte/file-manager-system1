@@ -1,0 +1,2054 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文件管理系统 | LocalStorage版本</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        :root {
+            --primary-color: #4361ee;
+            --secondary-color: #3a0ca3;
+            --success-color: #4cc9f0;
+            --danger-color: #f72585;
+            --warning-color: #f8961e;
+            --light-color: #f8f9fa;
+            --dark-color: #212529;
+            --gray-color: #6c757d;
+            --sidebar-width: 250px;
+            --header-height: 70px;
+        }
+
+        body {
+            background-color: #f5f7fb;
+            color: var(--dark-color);
+            line-height: 1.6;
+        }
+
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .login-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            padding: 20px;
+        }
+
+        .login-box {
+            background-color: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 450px;
+            padding: 40px;
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .login-header h1 {
+            color: var(--primary-color);
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+        }
+
+        .login-header p {
+            color: var(--gray-color);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--dark-color);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+
+        .form-control:focus {
+            border-color: var(--primary-color);
+            outline: none;
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 14px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-top: 10px;
+        }
+
+        .login-btn:hover {
+            background-color: #3251d4;
+        }
+
+        .login-footer {
+            text-align: center;
+            margin-top: 25px;
+            color: var(--gray-color);
+            font-size: 0.9rem;
+        }
+
+        .storage-info {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .storage-info h4 {
+            margin-bottom: 10px;
+            color: var(--dark-color);
+        }
+
+        .progress-bar {
+            height: 10px;
+            background-color: #e9ecef;
+            border-radius: 5px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .progress {
+            height: 100%;
+            background-color: var(--primary-color);
+            transition: width 0.3s;
+        }
+
+        .sidebar {
+            width: var(--sidebar-width);
+            background: linear-gradient(180deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 20px 0;
+            position: fixed;
+            height: 100vh;
+            transition: transform 0.3s ease;
+            z-index: 100;
+        }
+
+        .main-content {
+            flex: 1;
+            margin-left: var(--sidebar-width);
+            padding: 20px;
+        }
+
+        @media (max-width: 992px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            .sidebar.active {
+                transform: translateX(0);
+            }
+            .main-content {
+                margin-left: 0;
+            }
+            .mobile-menu-toggle {
+                display: block !important;
+            }
+        }
+
+        @media (min-width: 993px) {
+            .mobile-menu-toggle {
+                display: none !important;
+            }
+        }
+
+        .mobile-menu-toggle {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 101;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            width: 50px;
+            height: 50px;
+            border-radius: 5px;
+            font-size: 1.5rem;
+            cursor: pointer;
+            display: none;
+        }
+
+        .sidebar-header {
+            padding: 0 20px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .sidebar-header h2 {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .sidebar-header h2 i {
+            font-size: 1.8rem;
+        }
+
+        .nav-links {
+            list-style: none;
+        }
+
+        .nav-links li {
+            margin-bottom: 5px;
+        }
+
+        .nav-links a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 15px 20px;
+            color: rgba(255, 255, 255, 0.9);
+            text-decoration: none;
+            transition: all 0.3s;
+            font-size: 1rem;
+        }
+
+        .nav-links a:hover, .nav-links a.active {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+            border-left: 4px solid var(--success-color);
+        }
+
+        .nav-links i {
+            width: 20px;
+            text-align: center;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            margin-bottom: 30px;
+        }
+
+        .header-left h1 {
+            font-size: 1.8rem;
+            color: var(--dark-color);
+        }
+
+        .header-left p {
+            color: var(--gray-color);
+            font-size: 0.9rem;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-avatar {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        .user-details h4 {
+            font-size: 1rem;
+            margin-bottom: 3px;
+        }
+
+        .user-details p {
+            font-size: 0.8rem;
+            color: var(--gray-color);
+        }
+
+        .logout-btn {
+            background-color: var(--danger-color);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background-color 0.3s;
+        }
+
+        .logout-btn:hover {
+            background-color: #d1145a;
+        }
+
+        .content-card {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .card-header h2 {
+            font-size: 1.5rem;
+            color: var(--dark-color);
+        }
+
+        .card-header h2 i {
+            margin-right: 10px;
+            color: var(--primary-color);
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #3251d4;
+        }
+
+        .btn-success {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background-color: #3ab3d9;
+        }
+
+        .btn-warning {
+            background-color: var(--warning-color);
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background-color: #e6891b;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        thead {
+            background-color: #f8f9fa;
+        }
+
+        th {
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--dark-color);
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        td {
+            padding: 15px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        tbody tr:hover {
+            background-color: #f8f9fa;
+        }
+
+        .file-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 10px;
+        }
+
+        .file-icon.pdf {
+            background-color: #ff6b6b;
+            color: white;
+        }
+
+        .file-icon.doc {
+            background-color: #4d96ff;
+            color: white;
+        }
+
+        .file-icon.img {
+            background-color: #6bcf7f;
+            color: white;
+        }
+
+        .file-icon.zip {
+            background-color: #ffd166;
+            color: white;
+        }
+
+        .file-icon.other {
+            background-color: #9d9d9d;
+            color: white;
+        }
+
+        .file-info {
+            display: flex;
+            align-items: center;
+        }
+
+        .file-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .action-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.1rem;
+            color: var(--gray-color);
+            transition: color 0.3s;
+        }
+
+        .action-btn:hover {
+            color: var(--primary-color);
+        }
+
+        .upload-area {
+            border: 2px dashed #ddd;
+            border-radius: 10px;
+            padding: 40px 20px;
+            text-align: center;
+            margin-bottom: 30px;
+            transition: border-color 0.3s;
+        }
+
+        .upload-area:hover, .upload-area.dragover {
+            border-color: var(--primary-color);
+        }
+
+        .upload-area i {
+            font-size: 3rem;
+            color: var(--primary-color);
+            margin-bottom: 15px;
+        }
+
+        .upload-area h3 {
+            margin-bottom: 10px;
+            color: var(--dark-color);
+        }
+
+        .upload-area p {
+            color: var(--gray-color);
+            margin-bottom: 20px;
+        }
+
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background-color: white;
+            border-radius: 10px;
+            padding: 25px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            color: white;
+        }
+
+        .stat-icon.files {
+            background-color: var(--primary-color);
+        }
+
+        .stat-icon.users {
+            background-color: var(--success-color);
+        }
+
+        .stat-icon.storage {
+            background-color: var(--warning-color);
+        }
+
+        .stat-details h3 {
+            font-size: 1.8rem;
+            margin-bottom: 5px;
+        }
+
+        .stat-details p {
+            color: var(--gray-color);
+            font-size: 0.9rem;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background-color: white;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 500px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-header h3 {
+            color: var(--dark-color);
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--gray-color);
+        }
+
+        .page {
+            display: none;
+            animation: fadeIn 0.5s;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .role-badge {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .role-admin {
+            background-color: #ffebee;
+            color: #c62828;
+        }
+
+        .role-user {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .file-size {
+            color: var(--gray-color);
+            font-size: 0.9rem;
+        }
+
+        .search-box {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+
+        .search-btn {
+            padding: 12px 25px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .status-active {
+            color: green;
+            font-weight: 500;
+        }
+
+        .status-inactive {
+            color: red;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <!-- 登录页面 -->
+    <div id="login-page" class="login-container">
+        <div class="login-box">
+            <div class="login-header">
+                <h1><i class="fas fa-cloud-upload-alt"></i> 文件管理系统</h1>
+                <p>LocalStorage数据持久化版本</p>
+            </div>
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="username">用户名</label>
+                    <input type="text" id="username" class="form-control" placeholder="请输入用户名" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">密码</label>
+                    <input type="password" id="password" class="form-control" placeholder="请输入密码" required>
+                </div>
+                <button type="submit" class="login-btn">登录</button>
+            </form>
+            
+            <div class="storage-info">
+                <h4><i class="fas fa-database"></i> 数据存储信息</h4>
+                <p>此版本使用浏览器LocalStorage存储数据</p>
+                <div class="progress-bar">
+                    <div class="progress" id="storage-progress" style="width: 0%"></div>
+                </div>
+                <p id="storage-text">正在计算存储使用情况...</p>
+            </div>
+            
+            <div class="login-footer">
+                <p>演示账号: admin / password123 或 user1 / password123</p>
+                <p><button id="reset-data-btn" style="background: none; border: none; color: var(--danger-color); cursor: pointer; text-decoration: underline;">重置所有数据</button></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主应用页面 -->
+    <div id="app-page" class="container" style="display: none;">
+        <button class="mobile-menu-toggle" id="mobile-menu-toggle">
+            <i class="fas fa-bars"></i>
+        </button>
+        
+        <!-- 侧边栏 -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h2><i class="fas fa-cloud"></i> 文件管理</h2>
+            </div>
+            <ul class="nav-links">
+                <li><a href="#" class="active" data-page="dashboard"><i class="fas fa-home"></i> 控制面板</a></li>
+                <li><a href="#" data-page="files"><i class="fas fa-folder"></i> 所有文件</a></li>
+                <li><a href="#" data-page="upload"><i class="fas fa-upload"></i> 上传文件</a></li>
+                <li><a href="#" data-page="users"><i class="fas fa-users"></i> 用户管理</a></li>
+                <li><a href="#" data-page="logs"><i class="fas fa-history"></i> 操作日志</a></li>
+                <li><a href="#" data-page="profile"><i class="fas fa-user-cog"></i> 个人设置</a></li>
+                <li><a href="#" data-page="backup"><i class="fas fa-database"></i> 数据备份</a></li>
+            </ul>
+        </aside>
+
+        <!-- 主内容区 -->
+        <main class="main-content">
+            <!-- 头部 -->
+            <header>
+                <div class="header-left">
+                    <h1 id="page-title">控制面板</h1>
+                    <p id="page-description">欢迎使用文件管理系统</p>
+                </div>
+                <div class="user-info">
+                    <div class="user-avatar" id="user-avatar">A</div>
+                    <div class="user-details">
+                        <h4 id="user-name">管理员</h4>
+                        <p id="user-role">系统管理员</p>
+                    </div>
+                    <button class="logout-btn" id="logout-btn"><i class="fas fa-sign-out-alt"></i> 退出</button>
+                </div>
+            </header>
+
+            <!-- 仪表板页面 -->
+            <div id="dashboard-page" class="page active">
+                <div class="stats-container">
+                    <div class="stat-card">
+                        <div class="stat-icon files">
+                            <i class="fas fa-file"></i>
+                        </div>
+                        <div class="stat-details">
+                            <h3 id="total-files">0</h3>
+                            <p>文件总数</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon users">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-details">
+                            <h3 id="total-users">0</h3>
+                            <p>用户总数</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon storage">
+                            <i class="fas fa-hdd"></i>
+                        </div>
+                        <div class="stat-details">
+                            <h3 id="total-storage">0 MB</h3>
+                            <p>已用存储</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="content-card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-history"></i> 最近上传</h2>
+                        <button class="btn btn-primary" id="view-all-files">
+                            <i class="fas fa-eye"></i> 查看所有文件
+                        </button>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>文件名</th>
+                                    <th>类型</th>
+                                    <th>大小</th>
+                                    <th>上传者</th>
+                                    <th>上传时间</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recent-files">
+                                <tr>
+                                    <td colspan="6" style="text-align: center; padding: 40px; color: var(--gray-color);">
+                                        <i class="fas fa-folder-open" style="font-size: 2rem; margin-bottom: 15px; display: block;"></i>
+                                        暂无文件，请上传文件
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 文件管理页面 -->
+            <div id="files-page" class="page">
+                <div class="content-card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-folder"></i> 所有文件</h2>
+                        <div class="search-box">
+                            <input type="text" class="search-input" id="file-search" placeholder="搜索文件名...">
+                            <button class="search-btn" id="search-files"><i class="fas fa-search"></i> 搜索</button>
+                            <button class="btn btn-primary" id="refresh-files"><i class="fas fa-redo"></i> 刷新</button>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>文件名</th>
+                                    <th>类型</th>
+                                    <th>大小</th>
+                                    <th>上传者</th>
+                                    <th>上传时间</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="all-files">
+                                <!-- 动态生成 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 上传文件页面 -->
+            <div id="upload-page" class="page">
+                <div class="content-card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-upload"></i> 上传文件</h2>
+                    </div>
+                    <div class="upload-area" id="upload-area">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <h3>拖放文件到此处上传</h3>
+                        <p>支持多种文件格式，单个文件最大 100MB</p>
+                        <button class="btn btn-primary" id="browse-files">
+                            <i class="fas fa-folder-open"></i> 浏览文件
+                        </button>
+                        <input type="file" id="file-input" multiple style="display: none;">
+                    </div>
+                    <div id="upload-progress" style="display: none;">
+                        <h3>上传进度</h3>
+                        <div style="background-color: #eee; height: 10px; border-radius: 5px; margin: 15px 0;">
+                            <div id="progress-bar" style="background-color: var(--primary-color); height: 100%; width: 0%; border-radius: 5px;"></div>
+                        </div>
+                        <p id="progress-text">正在准备上传...</p>
+                    </div>
+                    <div id="uploaded-files">
+                        <!-- 上传的文件列表 -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- 用户管理页面 -->
+            <div id="users-page" class="page">
+                <div class="content-card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-users"></i> 用户管理</h2>
+                        <button class="btn btn-primary" id="add-user-btn">
+                            <i class="fas fa-user-plus"></i> 添加用户
+                        </button>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>用户名</th>
+                                    <th>邮箱</th>
+                                    <th>角色</th>
+                                    <th>注册时间</th>
+                                    <th>状态</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="users-list">
+                                <!-- 动态生成 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 操作日志页面 -->
+            <div id="logs-page" class="page">
+                <div class="content-card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-history"></i> 操作日志</h2>
+                        <button class="btn btn-warning" id="clear-logs">
+                            <i class="fas fa-trash"></i> 清除日志
+                        </button>
+                        <button class="btn btn-primary" id="refresh-logs">
+                            <i class="fas fa-redo"></i> 刷新
+                        </button>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>时间</th>
+                                    <th>用户</th>
+                                    <th>操作</th>
+                                    <th>详情</th>
+                                    <th>IP地址</th>
+                                </tr>
+                            </thead>
+                            <tbody id="logs-list">
+                                <!-- 动态生成 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 个人设置页面 -->
+            <div id="profile-page" class="page">
+                <div class="content-card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-user-cog"></i> 个人设置</h2>
+                    </div>
+                    <form id="profile-form">
+                        <div style="display: flex; gap: 30px; margin-bottom: 30px; flex-wrap: wrap;">
+                            <div style="flex: 1; min-width: 300px;">
+                                <h3 style="margin-bottom: 20px;">基本信息</h3>
+                                <div class="form-group">
+                                    <label for="profile-username">用户名</label>
+                                    <input type="text" id="profile-username" class="form-control" value="admin" disabled>
+                                </div>
+                                <div class="form-group">
+                                    <label for="profile-email">邮箱地址</label>
+                                    <input type="email" id="profile-email" class="form-control" value="admin@example.com">
+                                </div>
+                                <div class="form-group">
+                                    <label for="profile-fullname">全名</label>
+                                    <input type="text" id="profile-fullname" class="form-control" value="系统管理员">
+                                </div>
+                            </div>
+                            <div style="flex: 1; min-width: 300px;">
+                                <h3 style="margin-bottom: 20px;">安全设置</h3>
+                                <div class="form-group">
+                                    <label for="current-password">当前密码</label>
+                                    <input type="password" id="current-password" class="form-control">
+                                </div>
+                                <div class="form-group">
+                                    <label for="new-password">新密码</label>
+                                    <input type="password" id="new-password" class="form-control">
+                                </div>
+                                <div class="form-group">
+                                    <label for="confirm-password">确认新密码</label>
+                                    <input type="password" id="confirm-password" class="form-control">
+                                </div>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="padding: 12px 30px;">
+                            <i class="fas fa-save"></i> 保存更改
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 添加用户模态框 -->
+    <div class="modal" id="add-user-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>添加新用户</h3>
+                <button class="close-modal" id="close-add-user-modal">&times;</button>
+            </div>
+            <form id="add-user-form">
+                <div class="form-group">
+                    <label for="new-username">用户名</label>
+                    <input type="text" id="new-username" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="new-email">邮箱地址</label>
+                    <input type="email" id="new-email" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="new-password">密码</label>
+                    <input type="password" id="new-password" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="user-role-select">角色</label>
+                    <select id="user-role-select" class="form-control">
+                        <option value="user">普通用户</option>
+                        <option value="admin">管理员</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">添加用户</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 数据备份模态框 -->
+    <div class="modal" id="backup-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-download"></i> 数据备份与恢复</h3>
+                <button class="close-modal" id="close-backup-modal">&times;</button>
+            </div>
+            <div style="margin: 20px 0;">
+                <div style="margin-bottom: 20px;">
+                    <h4>备份数据</h4>
+                    <p>将当前所有数据导出为JSON文件</p>
+                    <button class="btn btn-primary" id="export-data-btn" style="width: 100%;">
+                        <i class="fas fa-file-export"></i> 导出数据
+                    </button>
+                </div>
+                
+                <div>
+                    <h4>恢复数据</h4>
+                    <p>从JSON文件导入数据（将覆盖现有数据）</p>
+                    <input type="file" id="import-file" accept=".json" style="display: none;">
+                    <button class="btn btn-warning" id="import-data-btn" style="width: 100%;">
+                        <i class="fas fa-file-import"></i> 导入数据
+                    </button>
+                </div>
+                
+                <div style="margin-top: 20px; padding: 15px; background-color: #fff3cd; border-radius: 5px;">
+                    <h4><i class="fas fa-info-circle"></i> 重要提示</h4>
+                    <p style="font-size: 0.9rem; margin-top: 5px;">
+                        数据存储在浏览器LocalStorage中，清除浏览器数据将丢失所有数据。
+                        建议定期备份重要数据。
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================
+        // 数据管理模块 - LocalStorage版本
+        // ============================
+        
+        const STORAGE_KEY = 'fileManagerData_v2';
+        const MAX_STORAGE_SIZE = 5 * 1024 * 1024; // 5MB限制
+        
+        // 默认数据
+        const defaultData = {
+            users: [
+                { id: 1, username: 'admin', fullname: '系统管理员', email: 'admin@example.com', role: 'admin', createdAt: '2023-01-15', status: 'active', password: 'password123' },
+                { id: 2, username: 'user1', fullname: '张三', email: 'user1@example.com', role: 'user', createdAt: '2023-02-20', status: 'active', password: 'password123' },
+                { id: 3, username: 'user2', fullname: '李四', email: 'user2@example.com', role: 'user', createdAt: '2023-03-10', status: 'active', password: 'password123' }
+            ],
+            files: [
+                { id: 1, name: '项目报告.pdf', type: 'pdf', size: '2.4 MB', uploader: 'admin', uploadedAt: '2023-10-28 14:30', icon: 'pdf' },
+                { id: 2, name: '设计文档.docx', type: 'doc', size: '1.8 MB', uploader: 'user1', uploadedAt: '2023-10-27 10:15', icon: 'doc' },
+                { id: 3, name: '产品图片.png', type: 'img', size: '4.2 MB', uploader: 'admin', uploadedAt: '2023-10-26 16:45', icon: 'img' },
+                { id: 4, name: '代码库.zip', type: 'zip', size: '12.5 MB', uploader: 'user2', uploadedAt: '2023-10-25 09:20', icon: 'zip' }
+            ],
+            logs: [
+                { id: 1, time: '2023-10-28 14:30:22', user: 'admin', action: '上传文件', details: '项目报告.pdf', ip: '192.168.1.100' },
+                { id: 2, time: '2023-10-28 13:15:10', user: 'user1', action: '下载文件', details: '设计文档.docx', ip: '192.168.1.101' },
+                { id: 3, time: '2023-10-28 11:45:33', user: 'admin', action: '系统启动', details: '系统初始化完成', ip: '192.168.1.100' }
+            ],
+            settings: {
+                maxFileSize: 100,
+                allowedTypes: ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'jpg', 'jpeg', 'png', 'gif', 'zip', 'rar'],
+                lastBackup: null
+            }
+        };
+        
+        // 当前数据
+        let currentData = { ...defaultData };
+        let currentUser = null;
+        
+        // LocalStorage操作函数
+        function saveDataToLocalStorage() {
+            try {
+                const dataStr = JSON.stringify(currentData);
+                const dataSize = new Blob([dataStr]).size;
+                
+                if (dataSize > MAX_STORAGE_SIZE) {
+                    alert('警告：数据量过大，已自动清理旧日志');
+                    currentData.logs = currentData.logs.slice(0, 50);
+                    return saveDataToLocalStorage();
+                }
+                
+                localStorage.setItem(STORAGE_KEY, dataStr);
+                updateStorageInfo();
+                updateDashboardStats();
+                return true;
+            } catch (error) {
+                console.error('保存数据失败:', error);
+                alert('保存数据失败，可能已达到存储上限。');
+                return false;
+            }
+        }
+        
+        function loadDataFromLocalStorage() {
+            try {
+                const savedData = localStorage.getItem(STORAGE_KEY);
+                if (savedData) {
+                    const parsedData = JSON.parse(savedData);
+                    
+                    currentData = {
+                        users: mergeArrays(defaultData.users, parsedData.users || [], 'username'),
+                        files: mergeArrays(defaultData.files, parsedData.files || [], 'id'),
+                        logs: parsedData.logs || defaultData.logs,
+                        settings: { ...defaultData.settings, ...(parsedData.settings || {}) }
+                    };
+                    
+                    if (!currentData.users.some(u => u.username === 'admin')) {
+                        currentData.users.unshift(defaultData.users[0]);
+                    }
+                }
+                updateStorageInfo();
+                updateDashboardStats();
+                return true;
+            } catch (error) {
+                console.error('加载数据失败:', error);
+                currentData = { ...defaultData };
+                saveDataToLocalStorage();
+                return false;
+            }
+        }
+        
+        function mergeArrays(defaultArr, savedArr, key) {
+            const merged = [...defaultArr];
+            savedArr.forEach(savedItem => {
+                const exists = merged.some(item => item[key] === savedItem[key]);
+                if (!exists) {
+                    merged.push(savedItem);
+                }
+            });
+            return merged;
+        }
+        
+        function clearAllData() {
+            if (confirm('确定要重置所有数据吗？此操作不可撤销，请先备份重要数据！')) {
+                localStorage.removeItem(STORAGE_KEY);
+                currentData = { ...defaultData };
+                saveDataToLocalStorage();
+                alert('数据已重置为默认状态！');
+                updateStorageInfo();
+                location.reload();
+            }
+        }
+        
+        function exportData() {
+            try {
+                const dataStr = JSON.stringify(currentData, null, 2);
+                const blob = new Blob([dataStr], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `file-manager-backup-${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                currentData.settings.lastBackup = new Date().toISOString();
+                saveDataToLocalStorage();
+                
+                alert('数据备份成功！文件已下载。');
+            } catch (error) {
+                console.error('导出数据失败:', error);
+                alert('导出数据失败！');
+            }
+        }
+        
+        function importData(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    
+                    if (!importedData.users || !importedData.files) {
+                        throw new Error('无效的数据格式');
+                    }
+                    
+                    if (confirm('导入数据将覆盖现有数据，确定要继续吗？')) {
+                        currentData = {
+                            ...defaultData,
+                            users: mergeArrays(defaultData.users, importedData.users || [], 'username'),
+                            files: mergeArrays(defaultData.files, importedData.files || [], 'id'),
+                            logs: importedData.logs || defaultData.logs,
+                            settings: { ...defaultData.settings, ...(importedData.settings || {}) }
+                        };
+                        
+                        saveDataToLocalStorage();
+                        alert('数据导入成功！');
+                        location.reload();
+                    }
+                } catch (error) {
+                    console.error('导入数据失败:', error);
+                    alert('导入失败：文件格式无效或已损坏');
+                }
+            };
+            reader.readAsText(file);
+        }
+        
+        function updateStorageInfo() {
+            try {
+                const dataStr = JSON.stringify(currentData);
+                const usedSize = new Blob([dataStr]).size;
+                const usedKB = (usedSize / 1024).toFixed(2);
+                const usedPercent = (usedSize / MAX_STORAGE_SIZE * 100).toFixed(1);
+                
+                const progressBar = document.getElementById('storage-progress');
+                const storageText = document.getElementById('storage-text');
+                
+                if (progressBar && storageText) {
+                    progressBar.style.width = `${usedPercent}%`;
+                    storageText.textContent = `已使用 ${usedKB} KB / ${(MAX_STORAGE_SIZE/1024).toFixed(0)} KB (${usedPercent}%)`;
+                    
+                    if (usedPercent > 80) {
+                        progressBar.style.backgroundColor = 'var(--danger-color)';
+                    } else if (usedPercent > 60) {
+                        progressBar.style.backgroundColor = 'var(--warning-color)';
+                    } else {
+                        progressBar.style.backgroundColor = 'var(--primary-color)';
+                    }
+                }
+            } catch (error) {
+                console.error('更新存储信息失败:', error);
+            }
+        }
+        
+        function updateDashboardStats() {
+            const totalFiles = document.getElementById('total-files');
+            const totalUsers = document.getElementById('total-users');
+            const totalStorage = document.getElementById('total-storage');
+            
+            if (totalFiles) totalFiles.textContent = currentData.files.length;
+            if (totalUsers) totalUsers.textContent = currentData.users.length;
+            
+            // 计算总存储大小
+            let totalSizeMB = 0;
+            currentData.files.forEach(file => {
+                const sizeStr = file.size;
+                const sizeNum = parseFloat(sizeStr);
+                if (sizeStr.includes('GB')) totalSizeMB += sizeNum * 1024;
+                else if (sizeStr.includes('MB')) totalSizeMB += sizeNum;
+                else if (sizeStr.includes('KB')) totalSizeMB += sizeNum / 1024;
+            });
+            
+            if (totalStorage) {
+                if (totalSizeMB > 1024) {
+                    totalStorage.textContent = (totalSizeMB / 1024).toFixed(1) + ' GB';
+                } else {
+                    totalStorage.textContent = totalSizeMB.toFixed(1) + ' MB';
+                }
+            }
+        }
+        
+        // 业务逻辑函数
+        function logAction(action, details) {
+            const logEntry = {
+                id: currentData.logs.length + 1,
+                time: new Date().toLocaleString('zh-CN'),
+                user: currentUser ? currentUser.username : 'system',
+                action: action,
+                details: details,
+                ip: 'local'
+            };
+            
+            currentData.logs.unshift(logEntry);
+            
+            if (currentData.logs.length > 100) {
+                currentData.logs = currentData.logs.slice(0, 100);
+            }
+            
+            saveDataToLocalStorage();
+            return logEntry;
+        }
+        
+        function authenticateUser(username, password) {
+            const user = currentData.users.find(u => 
+                u.username === username && u.password === password && u.status === 'active'
+            );
+            return user ? { ...user } : null;
+        }
+        
+        function addFile(fileInfo) {
+            const newFile = {
+                id: currentData.files.length > 0 ? Math.max(...currentData.files.map(f => f.id)) + 1 : 1,
+                ...fileInfo,
+                uploadedAt: new Date().toLocaleString('zh-CN')
+            };
+            
+            currentData.files.unshift(newFile);
+            saveDataToLocalStorage();
+            return newFile;
+        }
+        
+        function deleteFile(fileId) {
+            const fileIndex = currentData.files.findIndex(f => f.id === fileId);
+            if (fileIndex !== -1) {
+                const deletedFile = currentData.files[fileIndex];
+                currentData.files.splice(fileIndex, 1);
+                saveDataToLocalStorage();
+                return deletedFile;
+            }
+            return null;
+        }
+        
+        // 页面初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 加载数据
+            loadDataFromLocalStorage();
+            
+            // 登录表单提交
+            document.getElementById('login-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const username = document.getElementById('username').value;
+                const password = document.getElementById('password').value;
+                
+                const user = authenticateUser(username, password);
+                if (user) {
+                    currentUser = { ...user };
+                    delete currentUser.password;
+                    
+                    logAction('登录系统', '用户登录成功');
+                    
+                    document.getElementById('login-page').style.display = 'none';
+                    document.getElementById('app-page').style.display = 'flex';
+                    
+                    initializeMainApp();
+                } else {
+                    alert('用户名或密码错误！');
+                }
+            });
+            
+            // 重置数据按钮
+            document.getElementById('reset-data-btn').addEventListener('click', function(e) {
+                e.preventDefault();
+                clearAllData();
+            });
+            
+            updateStorageInfo();
+        });
+        
+        function initializeMainApp() {
+            // 更新用户信息
+            if (document.getElementById('user-name')) {
+                document.getElementById('user-name').textContent = currentUser.fullname;
+                document.getElementById('user-role').textContent = currentUser.role === 'admin' ? '系统管理员' : '普通用户';
+                document.getElementById('user-avatar').textContent = currentUser.username.charAt(0).toUpperCase();
+                document.getElementById('user-avatar').style.backgroundColor = currentUser.role === 'admin' ? 'var(--danger-color)' : 'var(--success-color)';
+            }
+            
+            // 登出功能
+            document.getElementById('logout-btn').addEventListener('click', function() {
+                logAction('退出系统', '用户安全退出');
+                currentUser = null;
+                document.getElementById('app-page').style.display = 'none';
+                document.getElementById('login-page').style.display = 'flex';
+            });
+            
+            // 移动菜单切换
+            document.getElementById('mobile-menu-toggle').addEventListener('click', function() {
+                document.getElementById('sidebar').classList.toggle('active');
+            });
+            
+            // 导航菜单点击事件
+            document.querySelectorAll('.nav-links a').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    document.querySelectorAll('.nav-links a').forEach(item => {
+                        item.classList.remove('active');
+                    });
+                    
+                    this.classList.add('active');
+                    
+                    const pageId = this.getAttribute('data-page');
+                    
+                    if (pageId === 'backup') {
+                        document.getElementById('backup-modal').classList.add('active');
+                        return;
+                    }
+                    
+                    switchPage(pageId);
+                    
+                    if (window.innerWidth <= 992) {
+                        document.getElementById('sidebar').classList.remove('active');
+                    }
+                });
+            });
+            
+            // 备份模态框
+            document.getElementById('close-backup-modal').addEventListener('click', function() {
+                document.getElementById('backup-modal').classList.remove('active');
+            });
+            
+            document.getElementById('export-data-btn').addEventListener('click', exportData);
+            
+            document.getElementById('import-data-btn').addEventListener('click', function() {
+                document.getElementById('import-file').click();
+            });
+            
+            document.getElementById('import-file').addEventListener('change', function(e) {
+                if (e.target.files.length > 0) {
+                    importData(e.target.files[0]);
+                    e.target.value = '';
+                }
+            });
+            
+            // 初始化页面
+            loadDashboard();
+            setupFileUpload();
+            setupUserManagement();
+            setupLogs();
+            setupProfile();
+            
+            // 更新存储信息
+            updateStorageInfo();
+            updateDashboardStats();
+        }
+        
+        function switchPage(pageId) {
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.remove('active');
+            });
+            
+            document.getElementById(`${pageId}-page`).classList.add('active');
+            
+            const pageTitles = {
+                dashboard: '控制面板',
+                files: '文件管理',
+                upload: '上传文件',
+                users: '用户管理',
+                logs: '操作日志',
+                profile: '个人设置'
+            };
+            
+            const pageDescriptions = {
+                dashboard: '系统概览与统计信息',
+                files: '管理所有上传的文件',
+                upload: '上传新文件到系统',
+                users: '管理系统用户与权限',
+                logs: '查看系统操作记录',
+                profile: '管理您的个人账户设置'
+            };
+            
+            document.getElementById('page-title').textContent = pageTitles[pageId] || '控制面板';
+            document.getElementById('page-description').textContent = pageDescriptions[pageId] || '欢迎使用文件管理系统';
+            
+            if (pageId === 'dashboard') {
+                loadDashboard();
+            } else if (pageId === 'files') {
+                loadAllFiles();
+            } else if (pageId === 'users') {
+                loadUsers();
+            } else if (pageId === 'logs') {
+                loadLogs();
+            }
+        }
+        
+        function loadDashboard() {
+            updateDashboardStats();
+            
+            const recentFilesContainer = document.getElementById('recent-files');
+            recentFilesContainer.innerHTML = '';
+            
+            const recentFiles = currentData.files.slice(0, 5);
+            
+            if (recentFiles.length === 0) {
+                recentFilesContainer.innerHTML = `
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 40px; color: var(--gray-color);">
+                            <i class="fas fa-folder-open" style="font-size: 2rem; margin-bottom: 15px; display: block;"></i>
+                            暂无文件，请上传文件
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            recentFiles.forEach(file => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>
+                        <div class="file-info">
+                            <div class="file-icon ${file.icon}">
+                                <i class="fas fa-file-${file.icon === 'other' ? 'alt' : file.icon}"></i>
+                            </div>
+                            <div>
+                                <div>${file.name}</div>
+                                <div class="file-size">${file.size}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>${getFileTypeName(file.type)}</td>
+                    <td>${file.size}</td>
+                    <td>${file.uploader}</td>
+                    <td>${file.uploadedAt}</td>
+                    <td>
+                        <div class="file-actions">
+                            <button class="action-btn" title="下载" onclick="appDownloadFile(${file.id})">
+                                <i class="fas fa-download"></i>
+                            </button>
+                            <button class="action-btn" title="预览" onclick="appPreviewFile(${file.id})">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            ${currentUser.role === 'admin' || currentUser.username === file.uploader ? 
+                                `<button class="action-btn" title="删除" onclick="appDeleteFile(${file.id})">
+                                    <i class="fas fa-trash"></i>
+                                </button>` : ''
+                            }
+                        </div>
+                    </td>
+                `;
+                recentFilesContainer.appendChild(row);
+            });
+            
+            document.getElementById('view-all-files').addEventListener('click', function() {
+                document.querySelector('[data-page="files"]').click();
+            });
+        }
+        
+        function loadAllFiles() {
+            const allFilesContainer = document.getElementById('all-files');
+            allFilesContainer.innerHTML = '';
+            
+            if (currentData.files.length === 0) {
+                allFilesContainer.innerHTML = `
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 40px; color: var(--gray-color);">
+                            <i class="fas fa-folder-open" style="font-size: 2rem; margin-bottom: 15px; display: block;"></i>
+                            暂无文件，请上传文件
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            currentData.files.forEach(file => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>
+                        <div class="file-info">
+                            <div class="file-icon ${file.icon}">
+                                <i class="fas fa-file-${file.icon === 'other' ? 'alt' : file.icon}"></i>
+                            </div>
+                            <div>
+                                <div>${file.name}</div>
+                                <div class="file-size">${file.size}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>${getFileTypeName(file.type)}</td>
+                    <td>${file.size}</td>
+                    <td>${file.uploader}</td>
+                    <td>${file.uploadedAt}</td>
+                    <td>
+                        <div class="file-actions">
+                            <button class="action-btn" title="下载" onclick="appDownloadFile(${file.id})">
+                                <i class="fas fa-download"></i>
+                            </button>
+                            <button class="action-btn" title="预览" onclick="appPreviewFile(${file.id})">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            ${currentUser.role === 'admin' || currentUser.username === file.uploader ? 
+                                `<button class="action-btn" title="删除" onclick="appDeleteFile(${file.id})">
+                                    <i class="fas fa-trash"></i>
+                                </button>` : ''
+                            }
+                        </div>
+                    </td>
+                `;
+                allFilesContainer.appendChild(row);
+            });
+            
+            document.getElementById('search-files').addEventListener('click', function() {
+                const searchTerm = document.getElementById('file-search').value.toLowerCase();
+                filterFiles(searchTerm);
+            });
+            
+            document.getElementById('file-search').addEventListener('keyup', function(e) {
+                if (e.key === 'Enter') {
+                    const searchTerm = this.value.toLowerCase();
+                    filterFiles(searchTerm);
+                }
+            });
+            
+            document.getElementById('refresh-files').addEventListener('click', function() {
+                loadAllFiles();
+            });
+        }
+        
+        function filterFiles(searchTerm) {
+            const filteredFiles = currentData.files.filter(file => 
+                file.name.toLowerCase().includes(searchTerm) || 
+                file.uploader.toLowerCase().includes(searchTerm) ||
+                file.type.toLowerCase().includes(searchTerm)
+            );
+            
+            const allFilesContainer = document.getElementById('all-files');
+            allFilesContainer.innerHTML = '';
+            
+            if (filteredFiles.length === 0) {
+                allFilesContainer.innerHTML = `
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 40px; color: var(--gray-color);">
+                            <i class="fas fa-search" style="font-size: 2rem; margin-bottom: 15px; display: block;"></i>
+                            未找到匹配的文件
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            filteredFiles.forEach(file => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>
+                        <div class="file-info">
+                            <div class="file-icon ${file.icon}">
+                                <i class="fas fa-file-${file.icon === 'other' ? 'alt' : file.icon}"></i>
+                            </div>
+                            <div>
+                                <div>${file.name}</div>
+                                <div class="file-size">${file.size}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>${getFileTypeName(file.type)}</td>
+                    <td>${file.size}</td>
+                    <td>${file.uploader}</td>
+                    <td>${file.uploadedAt}</td>
+                    <td>
+                        <div class="file-actions">
+                            <button class="action-btn" title="下载" onclick="appDownloadFile(${file.id})">
+                                <i class="fas fa-download"></i>
+                            </button>
+                            <button class="action-btn" title="预览" onclick="appPreviewFile(${file.id})">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            ${currentUser.role === 'admin' || currentUser.username === file.uploader ? 
+                                `<button class="action-btn" title="删除" onclick="appDeleteFile(${file.id})">
+                                    <i class="fas fa-trash"></i>
+                                </button>` : ''
+                            }
+                        </div>
+                    </td>
+                `;
+                allFilesContainer.appendChild(row);
+            });
+        }
+        
+        function setupFileUpload() {
+            const uploadArea = document.getElementById('upload-area');
+            const fileInput = document.getElementById('file-input');
+            const browseFilesBtn = document.getElementById('browse-files');
+            
+            browseFilesBtn.addEventListener('click', function() {
+                fileInput.click();
+            });
+            
+            fileInput.addEventListener('change', function(e) {
+                handleFilesUpload(e.target.files);
+            });
+            
+            uploadArea.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
+            
+            uploadArea.addEventListener('dragleave', function() {
+                uploadArea.classList.remove('dragover');
+            });
+            
+            uploadArea.addEventListener('drop', function(e) {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                
+                if (e.dataTransfer.files.length) {
+                    handleFilesUpload(e.dataTransfer.files);
+                }
+            });
+        }
+        
+        function handleFilesUpload(files) {
+            const uploadProgress = document.getElementById('upload-progress');
+            const progressBar = document.getElementById('progress-bar');
+            const progressText = document.getElementById('progress-text');
+            const uploadedFilesContainer = document.getElementById('uploaded-files');
+            
+            uploadProgress.style.display = 'block';
+            uploadedFilesContainer.innerHTML = '<h3>已上传文件</h3>';
+            
+            let uploadedCount = 0;
+            const totalFiles = files.length;
+            
+            Array.from(files).forEach((file, index) => {
+                setTimeout(() => {
+                    uploadedCount++;
+                    const progress = (uploadedCount / totalFiles) * 100;
+                    progressBar.style.width = `${progress}%`;
+                    progressText.textContent = `正在上传 ${uploadedCount}/${totalFiles}: ${file.name}`;
+                    
+                    const fileType = getFileExtension(file.name);
+                    const fileSize = formatFileSize(file.size);
+                    const fileIcon = getFileIconClass(fileType);
+                    
+                    const newFile = {
+                        name: file.name,
+                        type: fileType,
+                        size: fileSize,
+                        uploader: currentUser.username,
+                        icon: fileIcon
+                    };
+                    
+                    const addedFile = addFile(newFile);
+                    
+                    const fileItem = document.createElement('div');
+                    fileItem.className = 'file-info';
+                    fileItem.style.marginBottom = '10px';
+                    fileItem.style.padding = '10px';
+                    fileItem.style.backgroundColor = '#f9f9f9';
+                    fileItem.style.borderRadius = '5px';
+                    fileItem.style.display = 'flex';
+                    fileItem.style.alignItems = 'center';
+                    fileItem.innerHTML = `
+                        <div class="file-icon ${fileIcon}">
+                            <i class="fas fa-file-${fileIcon === 'other' ? 'alt' : fileIcon}"></i>
+                        </div>
+                        <div style="flex: 1;">
+                            <div>${file.name}</div>
+                            <div class="file-size">${fileSize} • 上传成功</div>
+                        </div>
+                    `;
+                    
+                    uploadedFilesContainer.appendChild(fileItem);
+                    
+                    logAction('上传文件', file.name);
+                    
+                    if (uploadedCount === totalFiles) {
+                        progressText.textContent = '上传完成！';
+                        setTimeout(() => {
+                            uploadProgress.style.display = 'none';
+                            progressBar.style.width = '0%';
+                        }, 2000);
+                        
+                        updateDashboardStats();
+                        
+                        if (document.getElementById('files-page').classList.contains('active')) {
+                            loadAllFiles();
+                        }
+                    }
+                }, index * 1000);
+            });
+        }
+        
+        function loadUsers() {
+            const usersListContainer = document.getElementById('users-list');
+            usersListContainer.innerHTML = '';
+            
+            currentData.users.forEach(user => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <div style="width: 40px; height: 40px; border-radius: 50%; background-color: ${user.role === 'admin' ? 'var(--danger-color)' : 'var(--success-color)'}; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">
+                                ${user.username.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                                <div>${user.username}</div>
+                                <div style="font-size: 0.8rem; color: var(--gray-color);">${user.fullname}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>${user.email}</td>
+                    <td><span class="role-badge ${user.role === 'admin' ? 'role-admin' : 'role-user'}">${user.role === 'admin' ? '管理员' : '普通用户'}</span></td>
+                    <td>${user.createdAt}</td>
+                    <td><span class="${user.status === 'active' ? 'status-active' : 'status-inactive'}">${user.status === 'active' ? '活跃' : '禁用'}</span></td>
+                    <td>
+                        <div class="file-actions">
+                            <button class="action-btn" title="编辑" onclick="appEditUser(${user.id})">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            ${user.username !== 'admin' && currentUser.role === 'admin' ? 
+                                `<button class="action-btn" title="${user.status === 'active' ? '禁用' : '激活'}" onclick="appToggleUserStatus(${user.id})">
+                                    <i class="fas fa-${user.status === 'active' ? 'ban' : 'check'}"></i>
+                                </button>
+                                <button class="action-btn" title="删除" onclick="appDeleteUser(${user.id})" style="color: var(--danger-color);">
+                                    <i class="fas fa-trash"></i>
+                                </button>` : ''
+                            }
+                        </div>
+                    </td>
+                `;
+                usersListContainer.appendChild(row);
+            });
+        }
+        
+        function setupUserManagement() {
+            document.getElementById('add-user-btn').addEventListener('click', function() {
+                document.getElementById('add-user-modal').classList.add('active');
+            });
+            
+            document.getElementById('close-add-user-modal').addEventListener('click', function() {
+                document.getElementById('add-user-modal').classList.remove('active');
+            });
+            
+            document.getElementById('add-user-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const newUser = {
+                    id: currentData.users.length + 1,
+                    username: document.getElementById('new-username').value,
+                    email: document.getElementById('new-email').value,
+                    role: document.getElementById('user-role-select').value,
+                    fullname: document.getElementById('new-username').value,
+                    password: document.getElementById('new-password').value,
+                    createdAt: new Date().toISOString().split('T')[0],
+                    status: 'active'
+                };
+                
+                currentData.users.push(newUser);
+                saveDataToLocalStorage();
+                
+                logAction('添加用户', `添加用户: ${newUser.username}`);
+                
+                loadUsers();
+                
+                document.getElementById('add-user-modal').classList.remove('active');
+                document.getElementById('add-user-form').reset();
+                
+                alert('用户添加成功！');
+            });
+        }
+        
+        function loadLogs() {
+            const logsListContainer = document.getElementById('logs-list');
+            logsListContainer.innerHTML = '';
+            
+            currentData.logs.forEach(log => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${log.time}</td>
+                    <td>${log.user}</td>
+                    <td>${log.action}</td>
+                    <td>${log.details}</td>
+                    <td>${log.ip}</td>
+                `;
+                logsListContainer.appendChild(row);
+            });
+        }
+        
+        function setupLogs() {
+            document.getElementById('clear-logs').addEventListener('click', function() {
+                if (confirm('确定要清除所有操作日志吗？此操作不可撤销。')) {
+                    logAction('清除日志', '清除了所有操作日志');
+                    
+                    currentData.logs = currentData.logs.filter(log => log.action === '清除日志');
+                    
+                    saveDataToLocalStorage();
+                    loadLogs();
+                    
+                    alert('日志已清除！');
+                }
+            });
+            
+            document.getElementById('refresh-logs').addEventListener('click', function() {
+                loadLogs();
+            });
+        }
+        
+        function setupProfile() {
+            document.getElementById('profile-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                logAction('更新资料', '更新了个人设置');
+                
+                alert('个人设置已保存！');
+                
+                loadLogs();
+            });
+        }
+        
+        // 工具函数
+        function getFileExtension(filename) {
+            const ext = filename.split('.').pop().toLowerCase();
+            if (['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'].includes(ext)) {
+                return ext;
+            } else if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg'].includes(ext)) {
+                return 'img';
+            } else if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext)) {
+                return 'zip';
+            } else {
+                return 'other';
+            }
+        }
+        
+        function getFileIconClass(fileType) {
+            if (['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'].includes(fileType)) {
+                return fileType === 'pdf' ? 'pdf' : 'doc';
+            } else if (fileType === 'img') {
+                return 'img';
+            } else if (fileType === 'zip') {
+                return 'zip';
+            } else {
+                return 'other';
+            }
+        }
+        
+        function getFileTypeName(fileType) {
+            const typeMap = {
+                'pdf': 'PDF文档',
+                'doc': 'Word文档',
+                'docx': 'Word文档',
+                'xls': 'Excel表格',
+                'xlsx': 'Excel表格',
+                'ppt': 'PowerPoint演示',
+                'pptx': 'PowerPoint演示',
+                'img': '图片文件',
+                'zip': '压缩文件',
+                'other': '其他文件'
+            };
+            return typeMap[fileType] || '未知文件';
+        }
+        
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+        
+        // 全局应用函数
+        window.appDownloadFile = function(fileId) {
+            const file = currentData.files.find(f => f.id === fileId);
+            if (file) {
+                logAction('下载文件', file.name);
+                alert(`开始下载: ${file.name}\n\n注：这是演示版本，实际项目中会触发真实文件下载。`);
+                loadLogs();
+            }
+        };
+        
+        window.appPreviewFile = function(fileId) {
+            const file = currentData.files.find(f => f.id === fileId);
+            if (file) {
+                alert(`文件预览: ${file.name}\n\n类型: ${getFileTypeName(file.type)}\n大小: ${file.size}\n上传者: ${file.uploader}\n上传时间: ${file.uploadedAt}\n\n注：这是演示版本，实际项目中会显示文件预览界面。`);
+            }
+        };
+        
+        window.appDeleteFile = function(fileId) {
+            const file = currentData.files.find(f => f.id === fileId);
+            if (file) {
+                if (confirm(`确定要删除文件 "${file.name}" 吗？此操作不可撤销。`)) {
+                    logAction('删除文件', file.name);
+                    
+                    deleteFile(fileId);
+                    
+                    updateDashboardStats();
+                    
+                    if (document.getElementById('files-page').classList.contains('active')) {
+                        loadAllFiles();
+                    } else {
+                        loadDashboard();
+                    }
+                    
+                    loadLogs();
+                    
+                    alert('文件已删除！');
+                }
+            }
+        };
+        
+        window.appEditUser = function(userId) {
+            const user = currentData.users.find(u => u.id === userId);
+            if (user) {
+                alert(`编辑用户: ${user.username}\n\n注：这是演示版本，实际项目中会打开用户编辑表单。`);
+            }
+        };
+        
+        window.appToggleUserStatus = function(userId) {
+            const user = currentData.users.find(u => u.id === userId);
+            if (user && user.username !== 'admin') {
+                const newStatus = user.status === 'active' ? 'inactive' : 'active';
+                const action = newStatus === 'active' ? '激活' : '禁用';
+                
+                if (confirm(`确定要${action}用户 "${user.username}" 吗？`)) {
+                    logAction(`${action}用户`, `${action}用户: ${user.username}`);
+                    
+                    user.status = newStatus;
+                    saveDataToLocalStorage();
+                    
+                    loadUsers();
+                    loadLogs();
+                    
+                    alert(`用户已${action}！`);
+                }
+            }
+        };
+        
+        window.appDeleteUser = function(userId) {
+            const user = currentData.users.find(u => u.id === userId);
+            if (user && user.username !== 'admin') {
+                if (confirm(`确定要删除用户 "${user.username}" 吗？此操作不可撤销。`)) {
+                    logAction('删除用户', `删除用户: ${user.username}`);
+                    
+                    currentData.users = currentData.users.filter(u => u.id !== userId);
+                    saveDataToLocalStorage();
+                    
+                    updateDashboardStats();
+                    loadUsers();
+                    loadLogs();
+                    
+                    alert('用户已删除！');
+                }
+            } else {
+                alert('不能删除管理员账户！');
+            }
+        };
+        
+        // 自动保存机制
+        setInterval(() => {
+            if (currentUser) {
+                saveDataToLocalStorage();
+            }
+        }, 30000);
+        
+        window.addEventListener('beforeunload', function() {
+            if (currentUser) {
+                saveDataToLocalStorage();
+            }
+        });
+        
+        // 浏览器兼容性检查
+        function checkBrowserCompatibility() {
+            if (!window.localStorage) {
+                alert('警告：您的浏览器不支持LocalStorage，数据将无法保存！\n请使用现代浏览器如Chrome、Firefox、Edge等。');
+                return false;
+            }
+            
+            try {
+                localStorage.setItem('test', 'test');
+                localStorage.removeItem('test');
+                return true;
+            } catch (error) {
+                alert('警告：LocalStorage可能已禁用或已满，数据将无法保存！\n请检查浏览器设置。');
+                return false;
+            }
+        }
+        
+        checkBrowserCompatibility();
+    </script>
+</body>
+</html>
